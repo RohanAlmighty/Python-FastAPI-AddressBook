@@ -1,4 +1,5 @@
 from math import radians, cos, sin, asin, sqrt
+import geocoder
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
 import models
@@ -92,25 +93,32 @@ async def delete_address(
     return f"Address of user {user_id} deleted"
 
 
-@router.get("/distance-between-address")
-async def read_distance_between_address(
-    user_id_1: int, user_id_2: int, db: Session = Depends(get_db)
-):
-    address_model_1 = (
-        db.query(models.Address).filter(models.Address.user_id == user_id_1).first()
-    )
-    address_model_2 = (
-        db.query(models.Address).filter(models.Address.user_id == user_id_2).first()
-    )
+@router.get("/addresses-within-radius")
+async def get_addresses_within_radius(radius_in_km: int, db: Session = Depends(get_db)):
 
-    dist = haversine(
-        address_model_1.lon,
-        address_model_1.lat,
-        address_model_2.lon,
-        address_model_2.lat,
-    )
+    g = geocoder.ip("me")
+    user_location_lat = g.lat
+    user_location_lon = g.lng
 
-    return f"Distance between two address is {dist} km"
+    addresses = db.query(models.Address).all()
+
+    addresses_in_radius = []
+
+    for address in addresses:
+
+        dist = haversine(
+            user_location_lon,
+            user_location_lat,
+            address.lon,
+            address.lat,
+        )
+
+        if dist <= radius_in_km:
+            addresses_in_radius.append(address)
+    if len(addresses_in_radius) > 0:
+        return addresses_in_radius
+    else:
+        return "No address found in radius"
 
 
 def haversine(lon1, lat1, lon2, lat2):
