@@ -1,7 +1,7 @@
-from math import radians, cos, sin, asin, sqrt
 import geocoder
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
+from utils.utils import haversine
 import models
 from fastapi import Depends, APIRouter, Request, Form
 import sys
@@ -119,15 +119,3 @@ async def get_addresses_within_radius(radius_in_km: int, db: Session = Depends(g
         return addresses_in_radius
     else:
         return "No address found in radius"
-
-
-def haversine(lon1, lat1, lon2, lat2):
-    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-    # haversine formula
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-    c = 2 * asin(sqrt(a))
-    # Radius of earth in kilometers is 6371
-    km = 6371 * c
-    return km
